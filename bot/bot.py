@@ -7,9 +7,9 @@ import requests
 from decouple import config
 from aiogram.utils.formatting import as_list, as_marked_list, as_key_value, Bold
 
-logging.basicConfig(level=logging.INFO)
-bot = Bot(token=config('token'))
 
+logging.basicConfig(level=logging.INFO)
+bot = Bot(token=config('Token'))
 dp = Dispatcher()
 
 

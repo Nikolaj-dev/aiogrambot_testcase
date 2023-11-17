@@ -8,5 +8,4 @@ urlpatterns = [
     path('history/', views.history),
     path('subscribe/', views.subscribe),
     path('unsubscribe/', views.unsubscribe),
-    path('mailing/', views.mailing),
 ]

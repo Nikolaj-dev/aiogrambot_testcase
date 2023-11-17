@@ -1,44 +1,29 @@
-import asyncio
 import json
 import logging
-
-from asgiref.sync import sync_to_async
 from django.contrib.auth.models import User
-from django.http import HttpRequest, JsonResponse, HttpResponse
-import requests
+from django.http import HttpRequest, JsonResponse
+from .service import get_course
 from django.views.decorators.csrf import csrf_exempt
-
-from .bot import bot
 from .models import TelegramChat, CurrencyHistory
 
 
 @csrf_exempt
 def get_currency(request: HttpRequest) -> JsonResponse:
-    url = 'https://www.floatrates.com/daily/usd.json'
-    response = requests.get(url=url)
-    if response.status_code == 200:
-        json_data = response.json()
-        rub_data = json_data.get("rub")
-        if rub_data:
-            course = {
-                "Currency Code": rub_data["code"],
-                "Name": rub_data["name"],
-                "Exchange Rate": rub_data["rate"],
-                "Date": rub_data["date"],
-                "Inverse Rate": rub_data["inverseRate"],
-            }
-            if request.method == 'GET':
-                return JsonResponse(course, safe=False)
-            if request.headers.get('content-type') == 'application/json':
+    course = get_course()
+    if request.method == 'GET':
+        return JsonResponse(course, safe=False)
+    if request.method == 'POST':
+        if request.headers.get('content-type') == 'application/json':
+            try:
+                # Получение JSON-данных из запроса
+                json_data = json.loads(request.body.decode('utf-8'))
+                username = json_data["username"]
                 try:
-                    # Получение JSON-данных из запроса
-                    json_data = json.loads(request.body.decode('utf-8'))
-                    username = json_data["username"]
-                    try:
-                        user = User.objects.filter(
-                            username=str(username),
-                        ).first()
-                        if user:
+                    user = User.objects.filter(
+                        username=str(username),
+                    ).first()
+                    if user:
+                        try:
                             CurrencyHistory.objects.create(
                                 user=user,
                                 code=course.get('Currency Code'),
@@ -46,18 +31,21 @@ def get_currency(request: HttpRequest) -> JsonResponse:
                                 rate=course.get('Exchange Rate'),
                                 date=course.get('Date'),
                                 inverseRate=course.get('Inverse Rate')
-                            )
+                                )
                             return JsonResponse({"message": "Готово!"}, status=200)
-                    except Exception as e:
-                        logging.error(f"Error: {e}", exc_info=True)
-                        return JsonResponse({"message": "Упс... Что-то пошло не так."}, status=500)
-                except json.JSONDecodeError:
-                    return JsonResponse({"message": 'Invalid JSON data'}, status=400)
+                        except Exception as e:
+                            logging.error(f"Error: {e}", exc_info=True)
+                            return JsonResponse({"message": "Ошибка получения истории запросов."}, status=500)
                 except Exception as e:
                     logging.error(f"Error: {e}", exc_info=True)
-                    return JsonResponse({"message": "Ошибка сервера!"}, status=500)
-            else:
-                return JsonResponse({"message": 'Request must be in JSON format'}, status=400)
+                    return JsonResponse({"message": "Упс... Что-то пошло не так."}, status=500)
+            except json.JSONDecodeError:
+                return JsonResponse({"message": 'Invalid JSON data'}, status=400)
+            except Exception as e:
+                logging.error(f"Error: {e}", exc_info=True)
+                return JsonResponse({"message": "Ошибка сервера!"}, status=500)
+        else:
+            return JsonResponse({"message": 'Request must be in JSON format'}, status=400)
 
     else:
         return JsonResponse({"message": "error 500"}, safe=False)
@@ -86,9 +74,9 @@ def register(request: HttpRequest) -> JsonResponse:
                         return JsonResponse({"message": "Готово!"}, status=200)
                     except Exception as e:
                         logging.error(f"Error: {e}", exc_info=True)
-                        return JsonResponse({"message": "Ошибка!"}, status=200)
+                        return JsonResponse({"message": "Ошибка регистрации чата."}, status=500)
                 else:
-                    return JsonResponse({"message": "Ошибка!"}, status=200)
+                    return JsonResponse({"message": "Ошибка! Пользователь не найден."}, status=400)
             except Exception as e:
                 logging.error(f"Error: {e}", exc_info=True)
                 return JsonResponse({"message": "Упс... возможно вы уже зарегистрированны."}, status=500)
@@ -151,8 +139,7 @@ def subscribe(request: HttpRequest) -> JsonResponse:
         except Exception as e:
             logging.error(f"Error: {e}", exc_info=True)
             return JsonResponse({"message": "Ошибка сервера."}, status=500)
-    else:
-        pass
+
 
 @csrf_exempt
 def unsubscribe(request: HttpRequest) -> JsonResponse:
@@ -171,26 +158,3 @@ def unsubscribe(request: HttpRequest) -> JsonResponse:
         except Exception as e:
             logging.error(f"Error: {e}", exc_info=True)
             return JsonResponse({"message": "Ошибка сервера."}, status=500)
-    else:
-        pass
-
-
-def mailing(request: HttpRequest) -> JsonResponse:
-    if request.method == "GET":
-        async def body():
-            for chat in TelegramChat.objects.filter(subscribed=True):
-                url = 'https://www.floatrates.com/daily/usd.json'
-                response = requests.get(url=url)
-                if response.status_code == 200:
-                    json_data = response.json()
-                    rub_data = json_data.get("rub")
-                    if rub_data:
-                        course = {
-                            "Currency Code": rub_data["code"],
-                            "Exchange Rate": rub_data["rate"],
-                            "Date": rub_data["date"],
-                        }
-                        text = f"Курс рубля от {course.get('Date')}: 1 USD = {str(course.get('Exchange Rate'))[0:4]} {course.get('Currency Code')}"
-                        await bot.send_message(chat_id=chat.chat_id, text=text)
-
-        return JsonResponse({"message": "200"}, status=200)

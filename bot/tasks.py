@@ -1,14 +1,9 @@
 import asyncio
-import logging
 import requests
-from aiogram.enums import ParseMode
-from celery import shared_task
 from .models import TelegramChat
 from .bot import bot
 from django_conf.celery import app
-from asgiref.sync import async_to_sync, sync_to_async
-
-
+from asgiref.sync import sync_to_async
 
 
 @sync_to_async
@@ -43,6 +38,3 @@ loop = asyncio.get_event_loop()
 def celery_send_beat_course():
     task = loop.run_until_complete(send_beat_course())
     return task
-
-
-
