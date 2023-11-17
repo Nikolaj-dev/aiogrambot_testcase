@@ -36,6 +36,8 @@ def get_currency(request: HttpRequest) -> JsonResponse:
                         except Exception as e:
                             logging.error(f"Error: {e}", exc_info=True)
                             return JsonResponse({"message": "Ошибка получения истории запросов."}, status=500)
+                    else:
+                        return JsonResponse({"message": "Пользователь пока не зарегистрировался."}, status=200)
                 except Exception as e:
                     logging.error(f"Error: {e}", exc_info=True)
                     return JsonResponse({"message": "Упс... Что-то пошло не так."}, status=500)
