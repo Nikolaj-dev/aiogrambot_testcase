@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class TelegramChat(models.Model):
-    chat_id = models.IntegerField(unique=True)
+    chat_id = models.TextField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     subscribed = models.BooleanField(default=False)
 

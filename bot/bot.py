@@ -1,19 +1,33 @@
+from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 import logging
 from aiogram.enums import ParseMode
 from aiogram.filters.command import Command
 import requests
-
+from decouple import config
+from aiogram.utils.formatting import as_list, as_marked_list, as_key_value, Bold
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token='6723625339:AAFLPTBkbDkC568LumYAkAbo5XhM9-t5O-0')
+bot = Bot(token=config('token'))
 
 dp = Dispatcher()
 
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("started")
+    content = as_list(
+        Bold(f"Добро пожаловать, {message.from_user.first_name}!"),
+
+        as_marked_list(
+            "Вот что может этот бот:",
+            as_key_value("/register", "Зарегистрироваться в приложении."),
+            as_key_value("/get_currency", "Получить курс доллара на сегодня."),
+            as_key_value("/history", "История ваших запросов валюты"),
+            as_key_value("/subscribe", "Подписаться на ежедневную рассылку курса валюты."),
+            as_key_value("/unsubscribe", "Отписаться от ежедневной рассылки курса валюты."),
+        )
+    )
+    await message.answer(**content.as_kwargs())
 
 
 @dp.message(Command("register"))
@@ -47,7 +61,7 @@ async def get_currency(message: types.Message):
         "date": json_data.get('Date'),
         "inverseRate": json_data.get('Inverse Rate'),
     }
-    await message.answer(f"Курс рубля от {data.get('date')}: 1 USD = {str(data.get('rate'))[0:4]} {data.get('code')}")
+    await message.answer(f"Курс рубля от {data.get('date')}\n1 USD = {str(data.get('rate'))[0:4]} {data.get('code')}")
 
 
 @dp.message(Command("history"))
@@ -60,7 +74,7 @@ async def history(message: types.Message):
     response = requests.post(url, json=data)
     response_status = response.json().get('message')
     response_list = list(response_status)
-    history_text = "\n".join([f"{item['Валюта']}: {item['Курс']} ({item['Время']})" for item in response_list])
+    history_text = "\n".join([f"{item['Валюта']}: {item['Курс']} ({(datetime.fromisoformat(item['Время'].replace('Z', ''))).strftime('%Y-%m-%d %H:%M:%S')})" for item in response_list])
 
     await message.answer(f"История курса валют:\n{history_text}", parse_mode=ParseMode.MARKDOWN)
 

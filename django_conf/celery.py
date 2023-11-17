@@ -12,7 +12,7 @@ app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
     'send-spam-every-1-minute': {
-        'task': 'bot.tasks.send_beat_course',
+        'task': 'bot.tasks.celery_send_beat_course',
         'schedule': crontab(minute='*/1')
     }
 }
