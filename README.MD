@@ -6,7 +6,7 @@
 
 1. Склонируйте репозиторий:
 
-   git clone *ссылка*
+   git clone *https://github.com/Nikolaj-dev/aiogrambot_testcase*
 
 2. Создайте виртуальное окружение и активируйте его:
 
