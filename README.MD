@@ -25,20 +25,22 @@
    Используйте пример в файле env_instance.txt для заполнения необходимых полей(проект использует Redis и PostgreSQL).
 
 Запуск
+1. Выполните миграции
+   python manage.py migrate
 
-1. Запустите сервер Django:
+2. Запустите сервер Django:
 
    python manage.py runserver
 
-2. Запустите телеграм-бот:
+3. Запустите телеграм-бот:
 
    python manage.py runbot
 
-3. Запустите Celery для выполнения фоновых задач:
+4. Запустите Celery для выполнения фоновых задач:
 
    celery -A django_conf worker -l info -P threads
 
-4. Запустите Celery для выполнения рассылки курса валюты:
+5. Запустите Celery для выполнения рассылки курса валюты:
 
    celery -A django_conf beat -l info
 
